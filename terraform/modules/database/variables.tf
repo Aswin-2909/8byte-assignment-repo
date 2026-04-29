@@ -18,11 +18,9 @@ variable "app_sg_id" {
   type        = string
 }
 
+# We keep this for the schema, but we won't hardcode the value in Git
 variable "db_password" {
   description = "The master password for the database"
   type        = string
-  sensitive   = true # This hides the password from the terminal logs
+  sensitive   = true 
 }
-
-
-
