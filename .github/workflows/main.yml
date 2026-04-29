@@ -76,14 +76,10 @@ jobs:
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
             
-            # Clear Port 8080
             sudo fuser -k 8080/tcp || true
-            
-            # Stop existing staging container
             sudo docker stop app-staging || true
-            sudo docker rm app-staging || true
+            sudo docker rm -f app-staging || true
             
-            # Start Staging on Port 8080
             sudo docker run -d --name app-staging -p 8080:4000 \
               -e NODE_ENV=staging \
               -e PG_HOST=${{ secrets.STAGING_DB_HOST }} \
@@ -106,22 +102,17 @@ jobs:
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
             
-            # 1. Stop and Disable system web servers that might auto-restart on Port 80
-            sudo systemctl stop nginx || true
-            sudo systemctl disable nginx || true
-            sudo systemctl stop apache2 || true
-            sudo systemctl disable apache2 || true
+            # 1. Kill the specific 'app' container you found manually
+            sudo docker stop app || true
+            sudo docker rm -f app || true
             
-            # 2. Kill any remaining processes on Port 80
-            sudo fuser -k 80/tcp || true
-            sleep 2
+            # 2. Reset Docker network to clear ghost ports
+            sudo systemctl restart docker
+            sleep 5
             
-            # 3. Clean up all Docker containers to avoid conflicts
-            sudo docker stop app-staging || true
-            sudo docker rm app-staging || true
-            sudo docker stop app-prod || true
-            sudo docker rm app-prod || true
-            sudo docker network prune -f || true
+            # 3. Clean up staging/prod names
+            sudo docker rm -f app-staging || true
+            sudo docker rm -f app-prod || true
             
             # 4. Start Production on Port 80
             sudo docker run -d --name app-prod -p 80:4000 \
