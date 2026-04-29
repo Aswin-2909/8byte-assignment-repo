@@ -1,6 +1,11 @@
 import { ConnectionOptions } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
+// Check if we are running in production mode
+const isProduction = process.env.NODE_ENV === 'production';
+const fileExtension = isProduction ? 'js' : 'ts';
+const baseDir = isProduction ? 'dist' : 'src';
+
 const config: ConnectionOptions = {
   type: 'postgres',
   name: 'default',
@@ -11,15 +16,18 @@ const config: ConnectionOptions = {
   database: process.env.POSTGRES_DB,
   synchronize: false,
   logging: false,
-  entities: ['src/orm/entities/**/*.ts'],
-  migrations: ['src/orm/migrations/**/*.ts'],
-  subscribers: ['src/orm/subscriber/**/*.ts'],
+  // This line is the magic fix:
+  entities: [`${baseDir}/orm/entities/**/*.${fileExtension}`],
+  migrations: [`${baseDir}/orm/migrations/**/*.${fileExtension}`],
+  subscribers: [`${baseDir}/orm/subscriber/**/*.${fileExtension}`],
   cli: {
     entitiesDir: 'src/orm/entities',
     migrationsDir: 'src/orm/migrations',
     subscribersDir: 'src/orm/subscriber',
   },
   namingStrategy: new SnakeNamingStrategy(),
+  // Add SSL for AWS RDS
+  ssl: isProduction ? { rejectUnauthorized: false } : false,
 };
 
 export = config;
