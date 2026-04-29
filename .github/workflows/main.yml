@@ -76,7 +76,7 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
-    #environment: production # MANUAL GATE (Requirement: Manual approval)
+    environment: production # MANUAL GATE (Requirement: Manual approval)
     steps:
       - name: Deploy to EC2 via SSH 🔑
         uses: appleboy/ssh-action@master
