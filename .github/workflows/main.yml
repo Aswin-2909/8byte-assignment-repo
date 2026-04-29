@@ -8,6 +8,7 @@ on:
 
 jobs:
   validate:
+    name: 'Lint & Test'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 🛎️
@@ -30,6 +31,7 @@ jobs:
           npm test || echo "Tests passed or none defined"
 
   build-and-push:
+    name: 'Build Docker Image'
     needs: validate
     runs-on: ubuntu-latest
     steps:
@@ -62,7 +64,7 @@ jobs:
     name: 'Deploy to Staging'
     needs: build-and-push
     runs-on: ubuntu-latest
-    environment: staging  # Automates deployment to staging
+    environment: staging 
     steps:
       - name: Deploy to Staging EC2 🔑
         uses: appleboy/ssh-action@master
@@ -73,8 +75,12 @@ jobs:
           script: |
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
+            
+            # Stop existing containers to avoid port conflicts
             sudo docker stop app-staging || true
             sudo docker rm app-staging || true
+            
+            # Start Staging on Port 8080
             sudo docker run -d --name app-staging -p 8080:4000 \
               -e NODE_ENV=staging \
               -e PG_HOST=${{ secrets.STAGING_DB_HOST }} \
@@ -85,7 +91,7 @@ jobs:
     name: 'Deploy to Production'
     needs: deploy-staging
     runs-on: ubuntu-latest
-    # CRITICAL: This 'environment' triggers the manual approval button in GitHub
+    # This environment name MUST match your GitHub Settings exactly to trigger the pause
     environment: production 
     steps:
       - name: Deploy to Production EC2 🔑
@@ -97,8 +103,16 @@ jobs:
           script: |
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
+            
+            # CRITICAL: Stop the staging container to free up system resources/ports if necessary
+            sudo docker stop app-staging || true
+            sudo docker rm app-staging || true
+            
+            # Stop and Refresh Production
             sudo docker stop app-prod || true
             sudo docker rm app-prod || true
+            
+            # Start Production on Port 80
             sudo docker run -d --name app-prod -p 80:4000 \
               -e NODE_ENV=production \
               -e PG_HOST=${{ secrets.DB_HOST }} \
@@ -122,4 +136,4 @@ jobs:
           from: GitHub Actions CI/CD
           body: |
             The pipeline for the 8Byte DevOps assignment has failed.
-            Please check the logs here: https://github.com/${{github.repository}}/actions
+            Check logs: https://github.com/${{github.repository}}/actions
