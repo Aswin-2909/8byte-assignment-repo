@@ -1,13 +1,10 @@
-# This "Data Source" is your driver. It goes to AWS and gets the secret.
-data "aws_ssm_parameter" "rds_password" {
-  name = "/8byte/db/password"
+variable "name" {
+  description = "Name prefix for the resources"
+  type        = string
 }
 
-# Now you pass that secret INTO the module
-module "db" {
-  source      = "./modules/db"
-  # ... other variables ...
-  
-  # This says: "The password for the module is the value we just fetched from SSM"
-  db_password = data.aws_ssm_parameter.rds_password.value 
+variable "db_password" {
+  description = "The master password for the database"
+  type        = string
+  sensitive   = true 
 }

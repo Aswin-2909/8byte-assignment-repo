@@ -1,10 +1,10 @@
-# 1. FETCH THE SECRET FROM AWS
-# This goes to SSM and finds the parameter you created named "/8byte/db/password"
+# --- 1. DATA SOURCES ---
+# Fetches the RDS password from SSM Parameter Store
 data "aws_ssm_parameter" "rds_password" {
   name = "/8byte/db/password"
 }
 
-# 2. NETWORKING MODULE
+# --- 2. NETWORKING ---
 module "networking" {
   source               = "./modules/networking"
   name                 = "8byte-aswin"
@@ -14,7 +14,7 @@ module "networking" {
   private_subnet_cidrs = ["10.0.10.0/24", "10.0.11.0/24"]
 }
 
-# 3. COMPUTE MODULE
+# --- 3. COMPUTE ---
 module "compute" {
   source    = "./modules/compute"
   name      = "8byte-aswin"
@@ -22,20 +22,19 @@ module "compute" {
   subnet_id = module.networking.public_subnet_ids[0] 
 }
 
-# 4. DATABASE MODULE (The important part!)
+# --- 4. DATABASE ---
 module "database" {
-  source           = "./modules/database"
+  source           = "./modules/database" # Verified path from your explorer
   name             = "8byte-aswin"
   vpc_id           = module.networking.vpc_id
   db_subnet_group  = module.networking.db_subnet_group_name
   app_sg_id        = module.compute.app_sg_id 
   
-  # CHANGED: We are passing the value from the SSM Data Source here.
-  # We are NO LONGER using var.db_password from your local file.
+  # Uses the SSM parameter fetched at the top of this file
   db_password      = data.aws_ssm_parameter.rds_password.value
 }
 
-# 5. LOAD BALANCER MODULE
+# --- 5. LOAD BALANCER ---
 module "load_balancer" {
   source         = "./modules/loadbalancer"
   name           = "8byte-aswin"

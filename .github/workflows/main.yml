@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 🛎️
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       
       - name: Setup Node 🟢
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: '18.x'
 
@@ -34,16 +34,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 🛎️
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Login to Docker Hub 🐳
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and Push 🚀
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: ./app/typeorm-express-typescript
           file: ./app/typeorm-express-typescript/Dockerfile 
@@ -58,46 +58,55 @@ jobs:
           exit-code: '0' 
           severity: 'CRITICAL,HIGH'
 
-  deploy:
+  deploy-staging:
+    name: 'Deploy to Staging'
     needs: build-and-push
     runs-on: ubuntu-latest
+    environment: staging  # Automates deployment to staging
+    steps:
+      - name: Deploy to Staging EC2 🔑
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.STAGING_EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
+            sudo docker stop app-staging || true
+            sudo docker rm app-staging || true
+            sudo docker run -d --name app-staging -p 8080:4000 \
+              -e NODE_ENV=staging \
+              -e PG_HOST=${{ secrets.STAGING_DB_HOST }} \
+              -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
+
+  deploy-production:
+    name: 'Deploy to Production'
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    # CRITICAL: This 'environment' triggers the manual approval button in GitHub
     environment: production 
     steps:
-      - name: Deploy to EC2 via SSH 🔑
+      - name: Deploy to Production EC2 🔑
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Ensure Docker is installed
-            if ! command -v docker &> /dev/null; then
-              sudo apt-get update && sudo apt-get install -y docker.io
-            fi
-            
-            # Login and Refresh Image
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
-            
-            # Maintenance: Clean up old Docker data to save disk space
-            sudo docker container prune -f
-            sudo docker image prune -f
-            
-            # Stop and restart container with secure variables
-            sudo docker stop app || true
-            sudo docker rm app || true
-            sudo docker run -d --name app -p 80:4000 \
+            sudo docker stop app-prod || true
+            sudo docker rm app-prod || true
+            sudo docker run -d --name app-prod -p 80:4000 \
               -e NODE_ENV=production \
               -e PG_HOST=${{ secrets.DB_HOST }} \
-              -e PG_PORT=5432 \
-              -e POSTGRES_USER=dbadmin \
               -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} \
-              -e POSTGRES_DB=postgres \
-              -e PGSSLMODE=no-verify \
               ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
 
   notify:
-    needs: [validate, build-and-push, deploy]
+    needs: [validate, build-and-push, deploy-staging, deploy-production]
     if: failure()
     runs-on: ubuntu-latest
     steps:
@@ -109,7 +118,7 @@ jobs:
           username: ${{secrets.MAIL_USERNAME}}
           password: ${{secrets.MAIL_PASSWORD}}
           subject: "PIPELINE FAILED: 8Byte Project"
-          to: your-email@gmail.com  # Update this to your real email
+          to: aswin.ramesh.devops@gmail.com 
           from: GitHub Actions CI/CD
           body: |
             The pipeline for the 8Byte DevOps assignment has failed.
