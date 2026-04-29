@@ -20,6 +20,7 @@ jobs:
 
       - name: Install and Build 🏗️
         run: |
+          cd app/typeorm-express-typescript
           npm install
           npm run build
       
