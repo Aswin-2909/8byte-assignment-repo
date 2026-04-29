@@ -76,7 +76,10 @@ jobs:
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
             
-            # Stop existing containers to avoid port conflicts
+            # Clear Port 8080 if something is hanging
+            sudo fuser -k 8080/tcp || true
+            
+            # Stop existing staging container
             sudo docker stop app-staging || true
             sudo docker rm app-staging || true
             
@@ -91,7 +94,7 @@ jobs:
     name: 'Deploy to Production'
     needs: deploy-staging
     runs-on: ubuntu-latest
-    # This environment name MUST match your GitHub Settings exactly to trigger the pause
+    # This environment name triggers the manual approval pause
     environment: production 
     steps:
       - name: Deploy to Production EC2 🔑
@@ -104,15 +107,19 @@ jobs:
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
             
-            # CRITICAL: Stop the staging container to free up system resources/ports if necessary
+            # 1. Kill any process holding Port 80 (Fixes 'port already allocated' error)
+            sudo fuser -k 80/tcp || true
+            
+            # 2. Stop both containers to ensure Production has full resources
             sudo docker stop app-staging || true
             sudo docker rm app-staging || true
-            
-            # Stop and Refresh Production
             sudo docker stop app-prod || true
             sudo docker rm app-prod || true
             
-            # Start Production on Port 80
+            # 3. Network cleanup
+            sudo docker network prune -f || true
+            
+            # 4. Start Production on Port 80
             sudo docker run -d --name app-prod -p 80:4000 \
               -e NODE_ENV=production \
               -e PG_HOST=${{ secrets.DB_HOST }} \
