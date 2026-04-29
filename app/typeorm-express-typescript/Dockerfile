@@ -1,29 +1,30 @@
-# Use a slim Node 18 image for a smaller, faster container
+# Use a slim Node 18 image
 FROM node:18-slim
 
 # Create app directory
 WORKDIR /app
 
-# Copy package files first for better caching
+# Copy package files first
 COPY package*.json ./
 
-# Install only production dependencies (saves space)
+# Install dependencies
 RUN npm install
 
 # Copy the rest of your source code
 COPY . .
 
-# Build the TypeScript code (creates the /dist folder)
+# 1. Build the TypeScript code (creates the /dist folder)
 RUN npm run build
 
-# --- THE CRITICAL PRODUCTION CONFIG ---
-# This tells your ormconfig.ts to use .js files in /dist
+# 2. THE FIX: Remove the source folder so the app MUST use /dist
+RUN rm -rf src
+
+# --- PRODUCTION CONFIG ---
 ENV NODE_ENV=production
-# Absolute path help
 ENV NODE_PATH=/app/dist
 
-# Expose the port your app runs on
+# Expose the port
 EXPOSE 4000
 
-# Start the application using node directly (bypass npm start for speed/stability)
+# Start the application using node directly
 CMD ["node", "dist/index.js"]
