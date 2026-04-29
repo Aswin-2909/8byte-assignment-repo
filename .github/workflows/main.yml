@@ -17,16 +17,7 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: '18.x'
-    
-      - name: Checkout 🛎️
-        uses: actions/checkout@v2
-      
-      - name: Setup Node 🟢
-        uses: actions/setup-node@v2
-        with:
-          node-version: '18.x'
 
-      # ADD THE DEBUG STEP HERE
       - name: Debug Path and List Files 🔍
         run: |
           pwd
@@ -56,15 +47,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # SCANNING STEP (Requirement: Scan for vulnerabilities)
-      - name: Container Security Scan 🛡️
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest'
-          format: 'table'
-          exit-code: '0' # Change to '1' if you want to fail the build on high vulns
-          severity: 'CRITICAL,HIGH'
-
       - name: Build and Push 🚀
         uses: docker/build-push-action@v4
         with:
@@ -73,10 +55,18 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
 
+      - name: Container Security Scan 🛡️
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest'
+          format: 'table'
+          exit-code: '0' 
+          severity: 'CRITICAL,HIGH'
+
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
-    environment: production # MANUAL GATE (Requirement: Manual approval)
+    environment: production 
     steps:
       - name: Deploy to EC2 via SSH 🔑
         uses: appleboy/ssh-action@master
@@ -100,7 +90,6 @@ jobs:
               -e DB_NAME=postgres \
               ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
 
-  # NOTIFICATION STEP (Requirement: Notify on failures)
   notify:
     needs: [validate, build-and-push, deploy]
     if: failure()
