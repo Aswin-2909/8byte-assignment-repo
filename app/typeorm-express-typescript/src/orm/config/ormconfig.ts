@@ -8,14 +8,15 @@ const baseDir = isProduction ? 'dist' : 'src';
 const config: ConnectionOptions = {
   type: 'postgres',
   name: 'default',
-  // HARDCODED TO BYPASS BOILERPLATE OVERWRITES:
-  host: 'terraform-20260428190342029800000001.cgx20kyocrdg.us-east-1.rds.amazonaws.com',
-  port: 5432,
-  username: 'dbadmin', 
-  password: '8BytePassword2026!', 
-  database: 'postgres',
+  // Using process.env to keep secrets out of Git
+  host: process.env.PG_HOST,
+  port: Number(process.env.PG_PORT) || 5432,
+  username: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
+  database: process.env.POSTGRES_DB,
   synchronize: false,
   logging: false,
+  // Dynamic paths to switch between TS (local) and JS (Docker)
   entities: [`${baseDir}/orm/entities/**/*.${fileExtension}`],
   migrations: [`${baseDir}/orm/migrations/**/*.${fileExtension}`],
   subscribers: [`${baseDir}/orm/subscriber/**/*.${fileExtension}`],
@@ -25,8 +26,10 @@ const config: ConnectionOptions = {
     subscribersDir: 'src/orm/subscriber',
   },
   namingStrategy: new SnakeNamingStrategy(),
-  // Force SSL for RDS
-  ssl: { rejectUnauthorized: false },
+  // Added extra safety for RDS SSL connections
+  ssl: isProduction || process.env.PGSSLMODE === 'no-verify' 
+    ? { rejectUnauthorized: false } 
+    : false,
 };
 
 export = config;
