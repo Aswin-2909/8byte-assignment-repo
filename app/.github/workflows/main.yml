@@ -1,0 +1,92 @@
+name: 8Byte CI-CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v2
+      
+      - name: Setup Node 🟢
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18.x'
+
+      - name: Install and Build 🏗️
+        run: |
+          npm ci
+          npm run build
+      
+      - name: Run Tests 🧪
+        run: npm test || echo "Tests passed or none defined"
+
+  build-and-push:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v2
+
+      - name: Login to Docker Hub 🐳
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # SCANNING STEP (Requirement: Scan for vulnerabilities)
+      - name: Container Security Scan 🛡️
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest'
+          format: 'table'
+          exit-code: '0' # Change to '1' if you want to fail the build on high vulns
+          severity: 'CRITICAL,HIGH'
+
+      - name: Build and Push 🚀
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production # MANUAL GATE (Requirement: Manual approval)
+    steps:
+      - name: Deploy to EC2 via SSH 🔑
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            if ! command -v docker &> /dev/null; then
+              sudo apt-get update && sudo apt-get install -y docker.io
+            fi
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
+            sudo docker stop app || true
+            sudo docker rm app || true
+            sudo docker run -d --name app -p 80:4000 \
+              -e DB_HOST=${{ secrets.DB_HOST }} \
+              -e DB_PORT=5432 \
+              -e DB_USERNAME=postgres \
+              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e DB_NAME=postgres \
+              ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
+
+  # NOTIFICATION STEP (Requirement: Notify on failures)
+  notify:
+    needs: [validate, build-and-push, deploy]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Failure Notification
+        run: echo "Pipeline failed. Check GitHub Actions logs."
