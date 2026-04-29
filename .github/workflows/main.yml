@@ -79,11 +79,11 @@ jobs:
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
             
-            # Clean up disk space
+            # Maintenance: Clean up old Docker data to save disk space
             sudo docker container prune -f
             sudo docker image prune -f
             
-            # Stop and restart with secure Environment Variables
+            # Stop and restart container with secure variables
             sudo docker stop app || true
             sudo docker rm app || true
             sudo docker run -d --name app -p 80:4000 \
@@ -101,5 +101,16 @@ jobs:
     if: failure()
     runs-on: ubuntu-latest
     steps:
-      - name: Failure Notification
-        run: echo "Pipeline failed. Check GitHub Actions logs."
+      - name: Send Mail on Failure 📧
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{secrets.MAIL_USERNAME}}
+          password: ${{secrets.MAIL_PASSWORD}}
+          subject: "PIPELINE FAILED: 8Byte Project"
+          to: your-email@gmail.com  # Update this to your real email
+          from: GitHub Actions CI/CD
+          body: |
+            The pipeline for the 8Byte DevOps assignment has failed.
+            Please check the logs here: https://github.com/${{github.repository}}/actions
