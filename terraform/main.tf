@@ -1,3 +1,10 @@
+# 1. FETCH THE SECRET FROM AWS
+# This goes to SSM and finds the parameter you created named "/8byte/db/password"
+data "aws_ssm_parameter" "rds_password" {
+  name = "/8byte/db/password"
+}
+
+# 2. NETWORKING MODULE
 module "networking" {
   source               = "./modules/networking"
   name                 = "8byte-aswin"
@@ -7,26 +14,32 @@ module "networking" {
   private_subnet_cidrs = ["10.0.10.0/24", "10.0.11.0/24"]
 }
 
+# 3. COMPUTE MODULE
 module "compute" {
   source    = "./modules/compute"
   name      = "8byte-aswin"
   vpc_id    = module.networking.vpc_id
-  subnet_id = module.networking.public_subnet_ids[0] # 
+  subnet_id = module.networking.public_subnet_ids[0] 
 }
 
+# 4. DATABASE MODULE (The important part!)
 module "database" {
   source           = "./modules/database"
   name             = "8byte-aswin"
   vpc_id           = module.networking.vpc_id
   db_subnet_group  = module.networking.db_subnet_group_name
   app_sg_id        = module.compute.app_sg_id 
-  db_password      = var.db_password
+  
+  # CHANGED: We are passing the value from the SSM Data Source here.
+  # We are NO LONGER using var.db_password from your local file.
+  db_password      = data.aws_ssm_parameter.rds_password.value
 }
 
+# 5. LOAD BALANCER MODULE
 module "load_balancer" {
   source         = "./modules/loadbalancer"
   name           = "8byte-aswin"
   vpc_id         = module.networking.vpc_id
   public_subnets = module.networking.public_subnet_ids
-  alb_sg_id      = module.compute.app_sg_id # Can reuse or make new SG
+  alb_sg_id      = module.compute.app_sg_id 
 }
