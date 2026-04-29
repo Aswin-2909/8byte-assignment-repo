@@ -25,7 +25,9 @@ jobs:
           npm run build
       
       - name: Run Tests 🧪
-        run: npm test || echo "Tests passed or none defined"
+        run: |
+          cd app/typeorm-express-typescript
+          npm test || echo "Tests passed or none defined"
 
   build-and-push:
     needs: validate
@@ -52,7 +54,8 @@ jobs:
       - name: Build and Push 🚀
         uses: docker/build-push-action@v4
         with:
-          context: .
+          context: ./app/typeorm-express-typescript
+          file: ./app/typeorm-express-typescript/Dockerfile 
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
 
