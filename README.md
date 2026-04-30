@@ -43,12 +43,13 @@ To allow the CI/CD pipeline to access the infrastructure, configure the followin
 *   **CI/CD Tooling:** Chose **GitHub Actions** over Jenkins to provide native, low-friction integration with the source code without requiring a dedicated CI server to manage.
 ---
 
-## 🛡️ 3. Security Considerations ("Shift-Left" Approach)
+## 🛡️ 3. Security, Secrets & Parameters
 
-*   **Vulnerability Scanning:** Integrated **Trivy** into the workflow. The pipeline automatically fails and blocks deployment if `CRITICAL` or `HIGH` vulnerabilities are detected.
-*   **Manual Deployment Gate:** Production deployments are fenced using **GitHub Environments**. The pipeline physically pauses and requires explicit, manual approval before the app is exposed on Port 80.
-*   **Secret Management:** No sensitive data is hardcoded. All credentials (passwords, IP addresses, SSH keys) are injected at runtime via **GitHub Encrypted Secrets**.
-*   **Port Isolation:** Implemented `fuser` logic and Docker network pruning during deployment to ensure that staging and production containers do not conflict or expose unauthorized ports.
+*   **Secret Management:** No hardcoded credentials in the repo or Terraform state. Passwords and SSH keys are injected at runtime using GitHub Secrets.
+*   **Parameterization:** Infrastructure is modularized using Terraform variables. Application configs are handled via environment variables so the same image works anywhere.
+*   **Vulnerability Scanning:** Trivy scans the Docker image during the GitHub Actions build. The pipeline automatically fails if `CRITICAL` or `HIGH` vulnerabilities are found.
+*   **Manual Gate:** Production is protected by GitHub Environments. The pipeline stops after staging and waits for manual approval before deploying to port 80.
+*   **Port Isolation:** Added `fuser` and Docker cleanup scripts to the deployment workflow to prevent port conflicts between the staging and production containers.
 
 ---
 
