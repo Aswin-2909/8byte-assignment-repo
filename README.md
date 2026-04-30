@@ -66,6 +66,6 @@ To allow the CI/CD pipeline to access the infrastructure, configure the followin
 *   **Production Environment:** `http://<EC2-Public-IP>:80`
 
 ---
-*Author: Aswin Ramesh*
+*Author: Aswin R*
 
    
