@@ -68,7 +68,7 @@ Secret Management: No sensitive data is hardcoded. All credentials (passwords, I
 
 Port Isolation: Implemented fuser logic and Docker network pruning during deployment to ensure that staging and production containers do not conflict or expose unauthorized ports.
 
-💰 4. Cost Optimization Measures
+💰** 4. Cost Optimization Measures**
 Consolidated Compute: By routing both Staging (Port 8080) and Production (Port 80) traffic to a single EC2 instance, compute costs are effectively halved.
 
 Right-Sized Instances: The infrastructure utilizes t2.micro or t3.micro instance types, which are suitable for lightweight Node.js workloads without over-provisioning.
@@ -85,10 +85,7 @@ Author: Aswin Ramesh
 
 ***
 
-### **2. How to Paste Properly**
-1. On your GitHub screen, click the **Edit** button (it looks like a pencil ✏️).
-2. **Delete every single word** currently in the file.
-3. **Paste** the code you just copied. 
+
 
 ### **3. Check the Preview**
 Before you save, click the **Preview** tab next to the "Code" tab. If you see bold headings, bullet points, and gray boxes for the bash commands, it worked. Click **Commit changes** to save it. 
