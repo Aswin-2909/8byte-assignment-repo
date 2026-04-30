@@ -1,3 +1,7 @@
+1. Copy the Code Exactly
+Copy the entire block below. It includes the specific hidden characters needed for bold text, lists, and code boxes.
+
+Markdown
 # 8Byte DevOps Infrastructure & CI/CD Pipeline
 
 This repository contains the infrastructure automation and continuous integration/continuous deployment (CI/CD) pipeline for the 8Byte technical assignment. The project provisions cloud infrastructure on AWS and automates the deployment of a containerized application.
@@ -18,6 +22,7 @@ The infrastructure is defined as code using Terraform to ensure repeatability.
 2. Initialize the working directory:
    ```bash
    terraform init
+   
 Review the execution plan:
 
 Bash
@@ -76,3 +81,16 @@ Staging Environment: http://<EC2-Public-IP>:8080
 Production Environment: http://<EC2-Public-IP>:80
 
 Author: Aswin Ramesh
+
+
+***
+
+### **2. How to Paste Properly**
+1. On your GitHub screen, click the **Edit** button (it looks like a pencil ✏️).
+2. **Delete every single word** currently in the file.
+3. **Paste** the code you just copied. 
+
+### **3. Check the Preview**
+Before you save, click the **Preview** tab next to the "Code" tab. If you see bold headings, bullet points, and gray boxes for the bash commands, it worked. Click **Commit changes** to save it. 
+
+This will transform that messy block into a clean, professional documentation page.
