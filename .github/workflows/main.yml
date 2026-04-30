@@ -80,10 +80,13 @@ jobs:
             sudo docker stop app-staging || true
             sudo docker rm -f app-staging || true
             
+            # Variables matched to image_d6a410.png
             sudo docker run -d --name app-staging -p 8080:4000 \
               -e NODE_ENV=staging \
               -e PG_HOST=${{ secrets.STAGING_DB_HOST }} \
+              -e POSTGRES_USER=postgres \
               -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e POSTGRES_DB=postgres \
               ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
 
   deploy-production:
@@ -102,23 +105,19 @@ jobs:
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
             
-            # 1. Kill the specific 'app' container you found manually
-            sudo docker stop app || true
-            sudo docker rm -f app || true
+            sudo docker stop app-prod || true
+            sudo docker rm -f app-prod || true
             
-            # 2. Reset Docker network to clear ghost ports
             sudo systemctl restart docker
             sleep 5
             
-            # 3. Clean up staging/prod names
-            sudo docker rm -f app-staging || true
-            sudo docker rm -f app-prod || true
-            
-            # 4. Start Production on Port 80
+            # Variables matched to image_d6a410.png
             sudo docker run -d --name app-prod -p 80:4000 \
               -e NODE_ENV=production \
               -e PG_HOST=${{ secrets.DB_HOST }} \
+              -e POSTGRES_USER=postgres \
               -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e POSTGRES_DB=postgres \
               ${{ secrets.DOCKERHUB_USERNAME }}/8byte-app:latest
 
   notify:
