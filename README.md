@@ -1,25 +1,23 @@
-8Byte DevOps Infrastructure & CI/CD Pipeline
+# 8Byte DevOps Infrastructure & CI/CD Pipeline
+
 This repository contains the infrastructure automation and continuous integration/continuous deployment (CI/CD) pipeline for the 8Byte technical assignment. The project provisions cloud infrastructure on AWS and automates the deployment of a containerized application.
 
-⚙️ 1. How to Set Up and Run the Infrastructure
-Prerequisites
-AWS CLI installed and configured with appropriate IAM permissions.
+---
 
-Terraform (v1.0+) installed locally.
+## ⚙️ 1. How to Set Up and Run the Infrastructure
 
-A DockerHub account for image hosting.
+### Prerequisites
+* **AWS CLI** installed and configured with appropriate IAM permissions.
+* **Terraform** (v1.0+) installed locally.
+* A **DockerHub** account for image hosting.
+* A **GitHub** account with the repository set to **Public** to enable Environment Protection Rules.
 
-A GitHub account with the repository set to Public to enable Environment Protection Rules.
-
-Step 1: Provision Infrastructure (Terraform)
+### Step 1: Provision Infrastructure (Terraform)
 The infrastructure is defined as code using Terraform to ensure repeatability.
-
-Navigate to the terraform/ directory.
-
-Initialize the working directory:
-
-Bash
-terraform init
+1. Navigate to the `terraform/` directory.
+2. Initialize the working directory:
+   ```bash
+   terraform init
 Review the execution plan:
 
 Bash
