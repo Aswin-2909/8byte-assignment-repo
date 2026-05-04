@@ -135,7 +135,7 @@ jobs:
           username: ${{secrets.MAIL_USERNAME}}
           password: ${{secrets.MAIL_PASSWORD}}
           subject: "PIPELINE FAILED: 8Byte Project"
-          to: aswin.ramesh.devops@gmail.com 
+          to: aswinramesh.2909@gmail.com 
           from: GitHub Actions CI/CD
           body: |
             The pipeline for the 8Byte DevOps assignment has failed.
